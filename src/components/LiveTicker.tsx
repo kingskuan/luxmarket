@@ -75,15 +75,19 @@ export default function LiveTicker() {
                 }
               : { title: r.title, label: `◆ ${r.changePct.toFixed(2)}%`, cls: "text-white/40" }
       )
-    : [
-        { title: "ROLEX SUBMARINER", label: "▲ +0.00%", cls: "text-emerald-400" },
-        { title: "PORSCHE 911", label: "▲ +0.00%", cls: "text-emerald-400" },
-        { title: "BIRKIN 25", label: "▲ +0.00%", cls: "text-emerald-400" },
-        { title: "FERRARI ROMA", label: "▲ +0.00%", cls: "text-emerald-400" },
-        { title: "DUNK PANDA", label: "▲ +0.00%", cls: "text-emerald-400" },
-        { title: "AJ1 CHICAGO", label: "SETTLED", cls: "text-white/40" },
-        { title: "POKÉMON CHARIZARD", label: "▲ +0.00%", cls: "text-emerald-400" },
-      ];
+    : null; // 未加载 → 骨架, 绝不渲染假数据 (硬条件)
+
+  if (!items) {
+    return (
+      <div className="relative z-[1] overflow-hidden border-y border-white/10 py-4">
+        <div className="flex gap-12 whitespace-nowrap">
+          {[...Array(6)].map((_, i) => (
+            <span key={i} className="h-4 w-48 animate-pulse rounded bg-white/5" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative z-[1] overflow-hidden border-y border-white/10 py-4">
