@@ -3,6 +3,7 @@ import OkbPrice from "../components/OkbPrice";
 import WalletButton from "../components/WalletButton";
 import MarketPulse from "../components/MarketPulse";
 import MarketShare from "../components/MarketShare";
+import LiveTicker from "../components/LiveTicker";
 import Reveal from "../components/Reveal";
 import HeroFX from "../components/HeroFX";
 import { HERO_IMAGE } from "../lib/markets";
@@ -53,9 +54,9 @@ export default function Home() {
             <span className="font-light text-white/25">NOT THE WATCH.</span>
           </h1>
           <p className="mt-8 max-w-lg text-base font-light leading-relaxed text-white/55">
-            AI prices the impossible — a Rolex, a 911, a grail sneaker. You
-            stake OKB on the direction. Winners take the pool, settled in
-            USDT. The luxury market, open to everyone.
+            AI reads live prices — a Rolex, a 911, a grail sneaker. You stake
+            USD₮0 on the direction. Winners take the pool, settled on-chain.
+            The luxury market, open to everyone.
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <a
@@ -74,21 +75,8 @@ export default function Home() {
         </Reveal>
       </section>
 
-      {/* ticker marquee */}
-      <div className="relative z-[1] overflow-hidden border-y border-white/10 py-4">
-        <div className="flex w-max animate-[scroll_28s_linear_infinite] gap-12 whitespace-nowrap">
-          {[0, 1].map((k) => (
-            <div key={k} className="flex gap-12">
-              <TickerItem t="ROLEX SUBMARINER" p="UP 58%" />
-              <TickerItem t="PORSCHE 991.2" p="UP 62%" />
-              <TickerItem t="BIRKIN 25" p="UP 47%" />
-              <TickerItem t="FERRARI ROMA" p="UP 55%" />
-              <TickerItem t="DUNK PANDA" p="UP 41%" />
-              <TickerItem t="AJ1 CHICAGO" p="SETTLING" />
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* ticker marquee — live oracle data */}
+      <LiveTicker />
 
       {/* market share — sizing animation */}
       <MarketShare />
@@ -117,9 +105,9 @@ export default function Home() {
         </Reveal>
         <Reveal stagger={0.15} className="mt-14 grid gap-10 sm:grid-cols-3">
           {[
-            { n: "01", t: "AI seeds the price", d: "Index data + auction news + sentiment → fair probability per market. Neutral anchor, never a counterparty." },
-            { n: "02", t: "You take a side", d: "Stake OKB on UP or DOWN. As little as $1 equivalent. Shares tradable before settlement." },
-            { n: "03", t: "Settle & win", d: "Real index snapshot decides. Winners split the losing pool. USDT settlement on X Layer." },
+            { n: "01", t: "AI reads live prices", d: "Real data feeds — Yahoo Finance, Bob's Watches listings, Google News — anchor each market. Verifiable sources, refreshed every minute." },
+            { n: "02", t: "You take a side", d: "Stake USD₮0 on UP or DOWN. Shares priced by the on-chain LMSR market. Sell before settlement anytime." },
+            { n: "03", t: "Settle & win", d: "The on-chain oracle reports the real outcome after the dispute window. Winners split the losing pool, paid in USD₮0." },
           ].map((s) => (
             <div key={s.n}>
               <div className="font-mono text-sm font-semibold text-lux-gold">
@@ -139,16 +127,8 @@ export default function Home() {
         <a href="https://x.com/XLayerOfficial" className="text-lux-gold">
           @XLayerOfficial BuildX AI Season
         </a>{" "}
-        · demo data — settlement oracles &amp; smart contracts in progress
+        · live on-chain · X Layer mainnet
       </footer>
     </main>
-  );
-}
-
-function TickerItem({ t, p }: { t: string; p: string }) {
-  return (
-    <span className="font-mono text-[13px] text-white/45">
-      <b className="font-medium text-lux-gold">{t}</b> {p}
-    </span>
   );
 }

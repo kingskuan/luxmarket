@@ -10,8 +10,31 @@ import { LUXMARKET_ADDRESS, USDT_ADDRESS, MARKET_IDS } from "../lib/chain";
 import { LUXMARKET_ABI } from "../lib/abi";
 import { useWeb3 } from "./Web3Provider";
 
-function fmt(n: number) {
-  return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+/** /api/markets 实时数据 (硬条件: 全部来自链上 + 真实数据源) */
+interface LiveMarket {
+  id: string;
+  chain: {
+    settleAt: number;
+    settled: boolean;
+    outcomeUp: boolean;
+    feedReportedAt: number;
+    referencePrice: number; // 6dp 转回的显示值
+  };
+  oracle: {
+    source: string;
+    baseline: number;
+    baselineAt: string;
+    current: number;
+    changePct: number;
+    direction: "up" | "down" | "flat";
+  };
+}
+
+function fmt(n: number, dp = 0) {
+  return n.toLocaleString("en-US", {
+    maximumFractionDigits: dp,
+    minimumFractionDigits: dp,
+  });
 }
 
 const CAT_STYLE: Record<string, string> = {
@@ -19,13 +42,21 @@ const CAT_STYLE: Record<string, string> = {
   Watch: "text-emerald-400",
   Goods: "text-purple-400",
   Sneaker: "text-amber-400",
+  Collectible: "text-pink-400",
 };
 
 const USDT_ABI = parseAbi([
   "function approve(address spender, uint256 amount) returns (bool)",
 ]);
 
-function MarketCard({ m }: { m: Market }) {
+function deriveStatus(live?: LiveMarket): "open" | "settling" | "closed" {
+  if (!live) return "open";
+  if (live.chain.settled) return "closed";
+  if (live.chain.feedReportedAt > 0) return "settling";
+  return "open";
+}
+
+function MarketCard({ m, live }: { m: Market; live?: LiveMarket }) {
   const { address, connect, walletClient, publicClient } = useWeb3();
   const [side, setSide] = useState<"up" | "down" | null>(null);
   const [amount, setAmount] = useState("10");
@@ -39,6 +70,7 @@ function MarketCard({ m }: { m: Market }) {
   const [txError, setTxError] = useState<string | null>(null);
 
   const marketId = MARKET_IDS[m.id];
+  const status = deriveStatus(live);
 
   // read on-chain price + cost estimate
   useEffect(() => {
@@ -99,7 +131,8 @@ function MarketCard({ m }: { m: Market }) {
     };
   }, [publicClient, marketId, amount]);
 
-  const upPct = chainPrice !== null ? Math.round(chainPrice * 100) : Math.round(m.upProb * 100);
+  // UP 概率 = 链上 LMSR 市场定价 (真实); 无连接时回退 50% 并标注
+  const upPct = chainPrice !== null ? Math.round(chainPrice * 100) : 50;
   const downPct = 100 - upPct;
   const payout = (s: "up" | "down", amt: number) => {
     const p = s === "up" ? upPct / 100 : downPct / 100;
@@ -107,7 +140,16 @@ function MarketCard({ m }: { m: Market }) {
     return amt / p;
   };
 
-  const closed = m.status === "closed";
+  const closed = status === "closed";
+  const oracle = live?.oracle;
+  const settleLabel = live
+    ? new Date(live.chain.settleAt * 1000).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "…";
 
   const sendTx = useCallback(
     async (to: `0x${string}`, data: `0x${string}`) => {
@@ -140,7 +182,7 @@ function MarketCard({ m }: { m: Market }) {
     setSide(s);
     setIsPending(true);
     try {
-      // 1) approve USDT
+      // 1) approve USDT0
       const approveData = encodeFunctionData({
         abi: USDT_ABI,
         functionName: "approve",
@@ -184,27 +226,41 @@ function MarketCard({ m }: { m: Market }) {
           </span>
           <span
             className={`rounded px-2 py-1 text-[10px] font-bold uppercase backdrop-blur-sm ${
-              m.status === "open"
+              status === "open"
                 ? "bg-emerald-500/25 text-emerald-300"
-                : m.status === "settling"
+                : status === "settling"
                   ? "bg-amber-500/25 text-amber-300"
                   : "bg-white/20 text-white/70"
             }`}
           >
-            {m.status}
+            {status}
           </span>
         </div>
         <div className="absolute bottom-3 left-4 right-4">
           <div className={`text-[10px] uppercase tracking-[0.3em] ${CAT_STYLE[m.category]}`}>
-            {m.period}
+            {m.category}
           </div>
           <h3 className="mt-1 text-xl font-bold leading-tight">{m.title}</h3>
-          <div className="mt-1 font-mono text-2xl font-medium">
-            ${fmt(m.reference)}
-            <span className="ml-1 text-xs font-normal text-white/40">
-              {m.referenceUnit}
-            </span>
-          </div>
+          {oracle && (
+            <div className="mt-1 font-mono text-2xl font-medium">
+              ${fmt(oracle.current, oracle.current < 100 ? 2 : 0)}
+              <span className="ml-2 text-xs font-normal text-white/40">
+                {oracle.source}
+              </span>
+              <span
+                className={`ml-2 text-xs font-bold ${
+                  oracle.changePct > 0.05
+                    ? "text-emerald-400"
+                    : oracle.changePct < -0.05
+                      ? "text-red-400"
+                      : "text-white/40"
+                }`}
+              >
+                {oracle.changePct > 0 ? "+" : ""}
+                {oracle.changePct.toFixed(2)}%
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -227,13 +283,22 @@ function MarketCard({ m }: { m: Market }) {
         </div>
 
         <p className="mt-3 text-xs leading-relaxed text-white/45">
-          <span className="font-semibold text-white/70">AI: </span>
-          {m.aiRationale}
+          {oracle ? (
+            <>
+              <span className="font-semibold text-white/70">Oracle: </span>
+              {oracle.current.toLocaleString("en-US", { maximumFractionDigits: 2 })}{" "}
+              vs baseline {oracle.baseline.toLocaleString("en-US", { maximumFractionDigits: 2 })}
+              {" · "}
+              <span className="text-white/30">settle {settleLabel}</span>
+            </>
+          ) : (
+            <span className="text-white/30">loading live oracle data…</span>
+          )}
         </p>
 
         {closed ? (
           <div className="mt-4 rounded-lg bg-white/5 py-2 text-center text-sm text-white/40">
-            Market closed
+            Market settled
           </div>
         ) : (
           <div className="mt-4 space-y-2">
@@ -326,6 +391,32 @@ function MarketCard({ m }: { m: Market }) {
 
 export default function MarketGrid() {
   const gridRef = useRef<HTMLDivElement>(null);
+  const [live, setLive] = useState<Record<string, LiveMarket> | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  // 每 60s 刷新 /api/markets (链上 + 真实数据源)
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const r = await fetch(`/api/markets?t=${Date.now()}`, { cache: "no-store" });
+        const d = await r.json();
+        if (d.ok && !cancelled) {
+          const map: Record<string, LiveMarket> = {};
+          for (const mk of d.markets) map[mk.id] = mk;
+          setLive(map);
+        } else if (!cancelled) setErr(d.error || "failed");
+      } catch (e) {
+        if (!cancelled) setErr((e as Error).message);
+      }
+    };
+    load();
+    const id = setInterval(load, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
 
   // stagger-reveal cards on scroll into view
   useEffect(() => {
@@ -352,10 +443,17 @@ export default function MarketGrid() {
   }, []);
 
   return (
-    <div ref={gridRef} className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-      {MARKETS_ALL.map((m) => (
-        <MarketCard key={m.id} m={m} />
-      ))}
+    <div>
+      {err && (
+        <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-xs text-red-400">
+          Live oracle data unavailable: {err}
+        </div>
+      )}
+      <div ref={gridRef} className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        {MARKETS_ALL.map((m) => (
+          <MarketCard key={m.id} m={m} live={live?.[m.id]} />
+        ))}
+      </div>
     </div>
   );
 }
