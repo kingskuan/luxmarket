@@ -43,12 +43,12 @@ export const xLayerTest = defineChain({
 /** Chain to use in the app (mainnet for now) */
 export const ACTIVE_CHAIN = xLayer;
 
-/** X Layer mainnet USDT (6 decimals) */
-export const USDT_ADDRESS = "0x1E4a5963aBFD975d8c9021ce480b42188849D41d";
+/** X Layer USD₮0 (native stablecoin users actually hold, 6 decimals) */
+export const USDT_ADDRESS = "0x779Ded0c9e1022225f8E0630b35a9b54bE713736";
 
-/** LuXMarket contract (deployed on X Layer mainnet) */
+/** LuXMarket contract (v2, deployed on X Layer mainnet, USD₮0 collateral) */
 export const LUXMARKET_ADDRESS =
-  "0xd7710fb42BBad678d860bCb688E72AD5E76Cf16B";
+  "0xFb7154E06B068031502051D285dE910b16A5aF0D";
 
 /** Map frontend market id -> on-chain market id (bytes32, keccak256 of id) */
 export const MARKET_IDS: Record<string, `0x${string}`> = {

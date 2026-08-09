@@ -30,11 +30,15 @@ function MarketCard({ m }: { m: Market }) {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [chainPrice, setChainPrice] = useState<number | null>(null);
+  const [costEstimate, setCostEstimate] = useState<{
+    up: number;
+    down: number;
+  } | null>(null);
   const [txError, setTxError] = useState<string | null>(null);
 
   const marketId = MARKET_IDS[m.id];
 
-  // read on-chain price
+  // read on-chain price + cost estimate
   useEffect(() => {
     if (!publicClient || !marketId) return;
     let cancelled = false;
@@ -53,6 +57,45 @@ function MarketCard({ m }: { m: Market }) {
       cancelled = true;
     };
   }, [publicClient, marketId]);
+
+  // live cost estimate: costToBuy(marketId, isUp, shares) → 6dp USDT
+  useEffect(() => {
+    if (!publicClient || !marketId) {
+      setCostEstimate(null);
+      return;
+    }
+    const amt = Number(amount);
+    if (!amt || amt <= 0) {
+      setCostEstimate(null);
+      return;
+    }
+    const shares = BigInt(Math.round(amt * 1e18));
+    let cancelled = false;
+    const fetchCost = async () => {
+      try {
+        const up = await publicClient.readContract({
+          address: LUXMARKET_ADDRESS,
+          abi: LUXMARKET_ABI,
+          functionName: "costToBuy",
+          args: [marketId, true, shares],
+        });
+        const down = await publicClient.readContract({
+          address: LUXMARKET_ADDRESS,
+          abi: LUXMARKET_ABI,
+          functionName: "costToBuy",
+          args: [marketId, false, shares],
+        });
+        if (!cancelled)
+          setCostEstimate({ up: Number(up) / 1e6, down: Number(down) / 1e6 });
+      } catch {
+        if (!cancelled) setCostEstimate(null);
+      }
+    };
+    fetchCost();
+    return () => {
+      cancelled = true;
+    };
+  }, [publicClient, marketId, amount]);
 
   const upPct = chainPrice !== null ? Math.round(chainPrice * 100) : Math.round(m.upProb * 100);
   const downPct = 100 - upPct;
@@ -200,7 +243,7 @@ function MarketCard({ m }: { m: Market }) {
                 onChange={(e) => setAmount(e.target.value)}
                 className="w-20 rounded-lg border border-white/15 bg-black/40 px-3 py-2 text-sm font-mono outline-none focus:border-lux-gold/60"
               />
-              <span className="text-xs text-white/40">USDT</span>
+              <span className="text-xs text-white/40">USD₮0</span>
               <div className="flex flex-1 gap-2">
                 <button
                   onClick={() => handleTrade("up")}
@@ -230,6 +273,20 @@ function MarketCard({ m }: { m: Market }) {
             {!address && (
               <div className="text-center text-[11px] text-white/40">
                 Click BUY to connect wallet first
+              </div>
+            )}
+
+            {costEstimate && (
+              <div className="rounded-lg bg-white/5 p-2 text-[10px] text-white/45">
+                On-chain cost for {amount} shares → UP{" "}
+                <span className="font-mono text-emerald-400">
+                  ≈{costEstimate.up.toFixed(2)}
+                </span>{" "}
+                / DOWN{" "}
+                <span className="font-mono text-red-400">
+                  ≈{costEstimate.down.toFixed(2)}
+                </span>{" "}
+                USD₮0
               </div>
             )}
 

@@ -37,6 +37,35 @@ export const LUXMARKET_ABI = [
   },
   {
     "type": "function",
+    "name": "costToBuy",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "isUp",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "shares",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "createMarket",
     "inputs": [
       {
