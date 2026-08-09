@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { encodeFunctionData, parseAbi } from "viem";
 import { Market, MARKETS as MARKETS_ALL } from "../lib/markets";
-import { LUXMARKET_ADDRESS, USDT_ADDRESS } from "../lib/chain";
+import { LUXMARKET_ADDRESS, USDT_ADDRESS, MARKET_IDS } from "../lib/chain";
 import { LUXMARKET_ABI } from "../lib/abi";
 import { useWeb3 } from "./Web3Provider";
 
@@ -32,9 +32,7 @@ function MarketCard({ m }: { m: Market }) {
   const [chainPrice, setChainPrice] = useState<number | null>(null);
   const [txError, setTxError] = useState<string | null>(null);
 
-  const marketId = m.id.startsWith("0x")
-    ? (m.id as `0x${string}`)
-    : undefined;
+  const marketId = MARKET_IDS[m.id];
 
   // read on-chain price
   useEffect(() => {
