@@ -1,6 +1,7 @@
 import MarketGrid from "../components/MarketGrid";
 import OkbPrice from "../components/OkbPrice";
 import WalletButton from "../components/WalletButton";
+import MarketPulse from "../components/MarketPulse";
 import { HERO_IMAGE } from "../lib/markets";
 
 export default function Home() {
@@ -90,6 +91,9 @@ export default function Home() {
         </h2>
         <MarketGrid />
       </section>
+
+      {/* AI market pulse — luxury news feed */}
+      <MarketPulse />
 
       {/* how it works */}
       <section id="how" className="relative z-[1] mx-auto max-w-4xl px-6 py-24 text-center sm:px-10">
