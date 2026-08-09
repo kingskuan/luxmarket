@@ -7,5 +7,11 @@
 }
 
 body {
-  background: #0a0a12;
+  background: #050506;
+  font-family: var(--font-space-grotesk), "Space Grotesk", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+@keyframes scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }

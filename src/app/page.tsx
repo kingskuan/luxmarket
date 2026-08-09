@@ -1,87 +1,138 @@
 import MarketGrid from "../components/MarketGrid";
 import OkbPrice from "../components/OkbPrice";
+import { HERO_IMAGE } from "../lib/markets";
 
 export default function Home() {
   return (
-    <main className="mx-auto max-w-6xl px-4 pb-20">
-      {/* Hero */}
-      <header className="border-b border-white/10 py-14 text-center">
-        <div className="mb-4 flex justify-center">
-          <OkbPrice />
-        </div>
-        <h1 className="text-4xl font-black tracking-tight sm:text-6xl">
-          LuX<span className="text-lux-gold">Market</span>
-        </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-lg text-white/60">
-          The first AI-powered luxury price prediction market on{" "}
-          <span className="font-semibold text-white">X Layer</span>.
-          <br />
-          Predict price moves of classic cars, luxury watches &amp; sneakers by
-          staking OKB — settle in USDT, play from $1.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2 text-xs text-white/50">
-          <span className="rounded-full border border-white/15 px-3 py-1">
-            🤖 AI seed pricing
-          </span>
-          <span className="rounded-full border border-white/15 px-3 py-1">
-            🏁 Weekly rolling + event markets
-          </span>
-          <span className="rounded-full border border-white/15 px-3 py-1">
-            ⚖️ P2P zero-sum, fully collateralized
-          </span>
-          <span className="rounded-full border border-white/15 px-3 py-1">
-            🔗 Built for BuildX AI Season Hackathon
-          </span>
-        </div>
-      </header>
+    <main className="min-h-screen overflow-x-hidden bg-[#050506] text-[#fafafa] antialiased">
+      {/* ambient glows */}
+      <div className="pointer-events-none fixed -right-24 -top-40 z-0 h-[500px] w-[500px] rounded-full bg-lux-gold/10 blur-[120px]" />
+      <div className="pointer-events-none fixed -left-32 bottom-[10%] z-0 h-[420px] w-[420px] rounded-full bg-purple-500/10 blur-[120px]" />
 
-      {/* Markets */}
-      <section className="py-10">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-bold">
-            Live Markets <span className="text-white/30">· X Layer</span>
-          </h2>
-          <span className="text-xs text-white/40">
-            AI probability anchor updates every 15 min
-          </span>
+      {/* nav */}
+      <nav className="relative z-10 flex items-center justify-between px-6 py-6 sm:px-10">
+        <div className="text-xl font-bold tracking-tight">
+          LuX<span className="text-lux-gold">Market</span>
         </div>
+        <div className="flex items-center gap-6">
+          <a href="#markets" className="hidden text-sm text-white/60 transition hover:text-lux-gold sm:block">
+            Markets
+          </a>
+          <a href="#how" className="hidden text-sm text-white/60 transition hover:text-lux-gold sm:block">
+            How it works
+          </a>
+          <OkbPrice />
+          <button className="cursor-pointer border border-lux-gold/50 px-5 py-2 text-sm font-medium text-lux-gold transition hover:bg-lux-gold hover:text-black">
+            Enter App
+          </button>
+        </div>
+      </nav>
+
+      {/* hero — full-bleed image */}
+      <section className="relative z-[1] flex min-h-[78vh] flex-col justify-center overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${HERO_IMAGE})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050506] via-black/60 to-black/30" />
+        <div className="relative mx-auto w-full max-w-6xl px-6 sm:px-10">
+          <div className="mb-6 text-xs uppercase tracking-[0.5em] text-lux-gold">
+            BuildX AI Season · X Layer
+          </div>
+          <h1 className="text-5xl font-semibold leading-[0.98] tracking-[-3px] sm:text-7xl lg:text-8xl">
+            OWN THE
+            <br />
+            <span className="text-lux-gold">PREDICTION.</span>
+            <br />
+            <span className="font-light text-white/25">NOT THE WATCH.</span>
+          </h1>
+          <p className="mt-8 max-w-lg text-base font-light leading-relaxed text-white/55">
+            AI prices the impossible — a Rolex, a 911, a grail sneaker. You
+            stake OKB on the direction. Winners take the pool, settled in
+            USDT. The luxury market, open to everyone.
+          </p>
+          <div className="mt-10 flex flex-wrap items-center gap-4">
+            <a
+              href="#markets"
+              className="bg-lux-gold px-8 py-4 text-sm font-semibold text-black transition hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(212,175,55,0.3)]"
+            >
+              Start Predicting →
+            </a>
+            <a
+              href="#how"
+              className="border border-white/25 px-7 py-4 text-sm text-white transition hover:border-lux-gold hover:text-lux-gold"
+            >
+              How it works
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ticker marquee */}
+      <div className="relative z-[1] overflow-hidden border-y border-white/10 py-4">
+        <div className="flex w-max animate-[scroll_28s_linear_infinite] gap-12 whitespace-nowrap">
+          {[0, 1].map((k) => (
+            <div key={k} className="flex gap-12">
+              <TickerItem t="ROLEX SUBMARINER" p="UP 58%" />
+              <TickerItem t="PORSCHE 991.2" p="UP 62%" />
+              <TickerItem t="BIRKIN 25" p="UP 47%" />
+              <TickerItem t="FERRARI ROMA" p="UP 55%" />
+              <TickerItem t="DUNK PANDA" p="UP 41%" />
+              <TickerItem t="AJ1 CHICAGO" p="SETTLING" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* markets */}
+      <section id="markets" className="relative z-[1] mx-auto max-w-6xl px-6 py-20 sm:px-10">
+        <h2 className="mb-8 text-xs uppercase tracking-[0.4em] text-white/40">
+          Live Markets
+        </h2>
         <MarketGrid />
       </section>
 
-      {/* How it works */}
-      <section className="mt-8 rounded-2xl border border-white/10 bg-lux-card p-8">
-        <h2 className="mb-6 text-xl font-bold">How it works</h2>
-        <div className="grid gap-6 md:grid-cols-3">
+      {/* how it works */}
+      <section id="how" className="relative z-[1] mx-auto max-w-4xl px-6 py-24 text-center sm:px-10">
+        <h2 className="text-4xl font-medium leading-tight tracking-[-2px] sm:text-5xl">
+          Luxury markets are <span className="text-lux-gold">opaque.</span>
+          <br />
+          We make them <span className="text-lux-gold">predictable.</span>
+        </h2>
+        <div className="mt-14 grid gap-10 sm:grid-cols-3">
           {[
-            {
-              t: "1 · AI sets the fair price",
-              d: "Our engine ingests index data (Hagerty, WatchCharts, StockX) + auction news to seed every market with a fair probability.",
-            },
-            {
-              t: "2 · You stake OKB on UP or DOWN",
-              d: "Deposit OKB (or USDT) on a market. As low as 1 OKB. Markets are weekly rolling or event-driven (auction weeks, launches).",
-            },
-            {
-              t: "3 · Winners take the pool",
-              d: "At settlement the real index snapshot decides. P2P zero-sum: winners split the losing side. Shares tradable before settlement.",
-            },
+            { n: "01", t: "AI seeds the price", d: "Index data + auction news + sentiment → fair probability per market. Neutral anchor, never a counterparty." },
+            { n: "02", t: "You take a side", d: "Stake OKB on UP or DOWN. As little as $1 equivalent. Shares tradable before settlement." },
+            { n: "03", t: "Settle & win", d: "Real index snapshot decides. Winners split the losing pool. USDT settlement on X Layer." },
           ].map((s) => (
-            <div key={s.t}>
-              <div className="mb-2 font-bold text-lux-gold">{s.t}</div>
-              <div className="text-sm leading-relaxed text-white/60">
-                {s.d}
+            <div key={s.n}>
+              <div className="font-mono text-sm font-semibold text-lux-gold">
+                {s.n}
               </div>
+              <h3 className="mt-3 text-lg font-semibold">{s.t}</h3>
+              <p className="mt-2 text-sm font-light leading-relaxed text-white/50">
+                {s.d}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      <footer className="mt-12 text-center text-xs text-white/30">
+      <footer className="relative z-[1] border-t border-white/5 py-10 text-center text-xs text-white/30">
         LuXMarket · Building for{" "}
-        <span className="text-white/50">@XLayerOfficial BuildX AI Season</span>{" "}
-        · Demo data for hackathon submission — settlement oracles &amp; smart
-        contracts on X Layer testnet/mainnet in progress.
+        <a href="https://x.com/XLayerOfficial" className="text-lux-gold">
+          @XLayerOfficial BuildX AI Season
+        </a>{" "}
+        · demo data — settlement oracles &amp; smart contracts in progress
       </footer>
     </main>
+  );
+}
+
+function TickerItem({ t, p }: { t: string; p: string }) {
+  return (
+    <span className="font-mono text-[13px] text-white/45">
+      <b className="font-medium text-lux-gold">{t}</b> {p}
+    </span>
   );
 }

@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
+import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "LuXMarket — AI Luxury Price Prediction on X Layer",
@@ -13,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="bg-lux-bg text-white antialiased min-h-screen">
+    <html lang="en" className={spaceGrotesk.variable}>
+      <body className="bg-[#050506] text-[#fafafa] antialiased min-h-screen">
         {children}
       </body>
     </html>

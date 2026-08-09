@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LuXMarket — Variant B: Trading Terminal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #fafbfc; color: #101114;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* ── topbar ── */
+  .topbar { background: #fff; border-bottom: 1px solid #e8e9ee; padding: 12px 32px; display: flex; align-items: center; gap: 28px; }
+  .logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo b { color: #7132f5; }
+  .ticker { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #686b82; }
+  .ticker .up { color: #149e61; font-weight: 600; }
+  .spacer { flex: 1; }
+  .connect { background: #7132f5; color: #fff; border: none; border-radius: 10px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s; }
+  .connect:hover { background: #5b1ecf; }
+  /* ── hero strip ── */
+  .hero { background: #fff; border-bottom: 1px solid #e8e9ee; padding: 40px 32px 32px; }
+  .hero h1 { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
+  .hero h1 span { color: #7132f5; }
+  .hero p { margin-top: 8px; color: #686b82; font-size: 15px; max-width: 640px; }
+  .stats { display: flex; gap: 40px; margin-top: 24px; }
+  .stat .l { font-size: 11px; color: #9497a9; text-transform: uppercase; letter-spacing: .06em; }
+  .stat .v { font-size: 22px; font-weight: 700; margin-top: 2px; }
+  .stat .v small { font-size: 12px; color: #9497a9; font-weight: 500; }
+  /* ── markets table ── */
+  .table-wrap { padding: 28px 32px; }
+  .table-head { display: grid; grid-template-columns: 2.2fr 1.1fr 1fr 1fr 1fr; gap: 16px; padding: 10px 16px; font-size: 11px; color: #9497a9; text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px solid #e8e9ee; }
+  .row {
+    display: grid; grid-template-columns: 2.2fr 1.1fr 1fr 1fr 1fr; gap: 16px; align-items: center;
+    padding: 18px 16px; border-bottom: 1px solid #eff0f3; background: #fff; transition: box-shadow .18s;
+  }
+  .row:hover { box-shadow: rgba(16,24,40,.06) 0 4px 24px; position: relative; z-index: 1; }
+  .mkt-name { font-weight: 600; font-size: 14px; }
+  .mkt-name small { display: block; font-weight: 400; color: #9497a9; font-size: 12px; margin-top: 2px; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 600; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; margin-bottom: 6px; }
+  .tag-car { background: rgba(113,50,245,.1); color: #5b1ecf; }
+  .tag-watch { background: rgba(20,158,97,.12); color: #026b3f; }
+  .tag-sneaker { background: rgba(240,180,41,.15); color: #8a6400; }
+  .idx { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500; }
+  .prob { text-align: center; }
+  .prob-bar { height: 6px; border-radius: 3px; background: #eef0f3; overflow: hidden; margin-top: 6px; position: relative; }
+  .prob-bar i { display: block; height: 100%; background: #7132f5; border-radius: 3px; }
+  .prob-bar i.red { background: #ef4444; }
+  .prob-labels { display: flex; justify-content: space-between; font-size: 11px; color: #686b82; margin-top: 4px; }
+  .buy { display: flex; gap: 8px; justify-content: flex-end; }
+  .buy button { border: 1.5px solid #e4e5ea; background: #fff; border-radius: 10px; padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .buy .up:hover, .buy .up.active { background: #149e61; border-color: #149e61; color: #fff; }
+  .buy .down:hover, .buy .down.active { background: #ef4444; border-color: #ef4444; color: #fff; }
+  /* ── how ── */
+  .how { padding: 48px 32px; background: #fff; border-top: 1px solid #e8e9ee; display: grid; grid-template-columns: repeat(3,1fr); gap: 32px; }
+  .how .card { border: 1px solid #e8e9ee; border-radius: 14px; padding: 24px; }
+  .how .card .n { font-family: 'JetBrains Mono', monospace; color: #7132f5; font-size: 13px; font-weight: 600; }
+  .how .card h3 { font-size: 16px; font-weight: 700; margin: 8px 0 6px; }
+  .how .card p { font-size: 13px; color: #686b82; line-height: 1.6; }
+  footer { padding: 24px 32px; color: #9497a9; font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">LuX<b>Market</b></div>
+  <div class="ticker">OKB/USD <span class="up">$93.87</span> &nbsp;·&nbsp; X Layer · chain 196</div>
+  <div class="spacer"></div>
+  <button class="connect">Connect Wallet</button>
+</div>
+
+<header class="hero">
+  <h1>Luxury price <span>prediction markets</span></h1>
+  <p>AI-seeded probability markets on real-world luxury assets. Stake OKB on UP or DOWN, settle in USDT. Fully collateralized, P2P zero-sum — no treasury risk.</p>
+  <div class="stats">
+    <div class="stat"><div class="l">Open markets</div><div class="v">6</div></div>
+    <div class="stat"><div class="l">Total volume (demo)</div><div class="v">$24.8K</div></div>
+    <div class="stat"><div class="l">AI accuracy (demo)</div><div class="v">68<small>%</small></div></div>
+    <div class="stat"><div class="l">Next settlement</div><div class="v">16 Aug</div></div>
+  </div>
+</header>
+
+<section class="table-wrap">
+  <div class="table-head">
+    <div>Market</div><div>Index</div><div>AI Probability</div><div style="text-align:right">Trade</div>
+  </div>
+
+  <div class="row">
+    <div class="mkt-name"><span class="tag tag-car">Car</span>Porsche 911 (991.2)<small>7d · Hagerty Index · settles 16 Aug</small></div>
+    <div class="idx">$128,450</div>
+    <div class="prob">
+      <div class="prob-labels"><span>UP 62%</span><span style="color:#ef4444">38%</span></div>
+      <div class="prob-bar"><i style="width:62%"></i></div>
+    </div>
+    <div class="buy"><button class="up" data-m="Lot 01">Buy UP</button><button class="down" data-m="Lot 01">Buy DOWN</button></div>
+  </div>
+
+  <div class="row">
+    <div class="mkt-name"><span class="tag tag-car">Car</span>Ferrari Roma<small>Event · Monterey Auction Week · settles 22 Aug</small></div>
+    <div class="idx">$214,900</div>
+    <div class="prob">
+      <div class="prob-labels"><span>UP 55%</span><span style="color:#ef4444">45%</span></div>
+      <div class="prob-bar"><i style="width:55%"></i></div>
+    </div>
+    <div class="buy"><button class="up" data-m="Lot 02">Buy UP</button><button class="down" data-m="Lot 02">Buy DOWN</button></div>
+  </div>
+
+  <div class="row">
+    <div class="mkt-name"><span class="tag tag-watch">Watch</span>Rolex Submariner 126610<small>7d · WatchCharts · settles 16 Aug</small></div>
+    <div class="idx">$13,750</div>
+    <div class="prob">
+      <div class="prob-labels"><span>UP 58%</span><span style="color:#ef4444">42%</span></div>
+      <div class="prob-bar"><i style="width:58%"></i></div>
+    </div>
+    <div class="buy"><button class="up" data-m="Lot 03">Buy UP</button><button class="down" data-m="Lot 03">Buy DOWN</button></div>
+  </div>
+
+  <div class="row">
+    <div class="mkt-name"><span class="tag tag-watch">Goods</span>Hermès Birkin 25 Togo<small>14d · Resale Index · settles 23 Aug</small></div>
+    <div class="idx">$24,500</div>
+    <div class="prob">
+      <div class="prob-labels"><span style="color:#ef4444">UP 47%</span><span>53%</span></div>
+      <div class="prob-bar"><i class="red" style="width:53%;background:#ef4444;float:right"></i></div>
+    </div>
+    <div class="buy"><button class="up" data-m="Lot 04">Buy UP</button><button class="down" data-m="Lot 04">Buy DOWN</button></div>
+  </div>
+
+  <div class="row">
+    <div class="mkt-name"><span class="tag tag-sneaker">Sneaker</span>Nike Dunk Low 'Panda'<small>7d · StockX · settles 16 Aug</small></div>
+    <div class="idx">$98</div>
+    <div class="prob">
+      <div class="prob-labels"><span style="color:#ef4444">UP 41%</span><span>59%</span></div>
+      <div class="prob-bar"><i class="red" style="width:59%;background:#ef4444;float:right"></i></div>
+    </div>
+    <div class="buy"><button class="up" data-m="Lot 05">Buy UP</button><button class="down" data-m="Lot 05">Buy DOWN</button></div>
+  </div>
+</section>
+
+<section class="how">
+  <div class="card"><div class="n">01</div><h3>AI seeds the price</h3><p>Index data + auction news + sentiment → fair probability per market. Neutral anchor, never a counterparty.</p></div>
+  <div class="card"><div class="n">02</div><h3>You take a side</h3><p>Stake OKB on UP or DOWN. As little as $1 equivalent. Shares tradable before settlement.</p></div>
+  <div class="card"><div class="n">03</div><h3>Settle &amp; win</h3><p>Real index snapshot decides. Winners split the losing pool. USDT settlement on X Layer.</p></div>
+</section>
+
+<footer>LuXMarket · BuildX AI Season Hackathon · demo data</footer>
+
+<script>
+  // interactive: single-select trade buttons
+  document.querySelectorAll('.row').forEach(row => {
+    const btns = row.querySelectorAll('button');
+    btns.forEach(b => b.addEventListener('click', () => {
+      btns.forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      const m = b.dataset.m;
+      const side = b.classList.contains('up') ? 'UP' : 'DOWN';
+      console.log(`[demo] ${m} → ${side}`);
+      b.textContent = `✓ ${b.textContent}`;
+      setTimeout(() => { b.textContent = b.textContent.replace('✓ ', ''); }, 1200);
+    }));
+  });
+</script>
+</body>
+</html>

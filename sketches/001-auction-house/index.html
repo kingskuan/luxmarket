@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LuXMarket — Variant A: Auction House</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #0b0a08;
+    color: #ece7dd;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  /* ── nav ── */
+  nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 28px 56px;
+    border-bottom: 1px solid rgba(201,162,39,.18);
+  }
+  .logo { font-family: 'Cormorant Garamond', serif; font-size: 30px; letter-spacing: .14em; color: #c9a227; font-weight: 500; }
+  .logo span { color: #ece7dd; }
+  nav a { color: #ece7dd; text-decoration: none; font-size: 12px; letter-spacing: .22em; text-transform: uppercase; margin-left: 36px; opacity: .7; transition: opacity .2s; }
+  nav a:hover { opacity: 1; }
+  .nav-right { display: flex; align-items: center; }
+  .okb-badge { border: 1px solid rgba(201,162,39,.4); padding: 8px 16px; font-size: 12px; letter-spacing: .1em; color: #c9a227; }
+  /* ── hero ── */
+  .hero { padding: 120px 56px 90px; text-align: center; position: relative; }
+  .hero::after {
+    content: ""; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+    width: 1px; height: 60px; background: linear-gradient(to bottom, #c9a227, transparent);
+  }
+  .kicker { font-size: 11px; letter-spacing: .42em; text-transform: uppercase; color: #c9a227; margin-bottom: 28px; }
+  .hero h1 {
+    font-family: 'Cormorant Garamond', serif; font-weight: 300;
+    font-size: clamp(56px, 9vw, 120px); line-height: 1.02; color: #f5f1e8;
+  }
+  .hero h1 em { font-style: italic; color: #c9a227; }
+  .hero p { max-width: 560px; margin: 36px auto 0; font-size: 15px; font-weight: 300; color: rgba(236,231,221,.62); line-height: 1.9; }
+  .hero-cta { margin-top: 48px; display: flex; gap: 16px; justify-content: center; }
+  .btn { display: inline-block; padding: 16px 40px; font-size: 12px; letter-spacing: .24em; text-transform: uppercase; text-decoration: none; transition: all .25s; }
+  .btn-gold { background: #c9a227; color: #0b0a08; font-weight: 600; }
+  .btn-gold:hover { background: #e0b93c; transform: translateY(-2px); }
+  .btn-ghost { border: 1px solid rgba(236,231,221,.3); color: #ece7dd; }
+  .btn-ghost:hover { border-color: #c9a227; color: #c9a227; }
+  /* ── market list, auction-catalog style ── */
+  .catalog { max-width: 1100px; margin: 90px auto 0; padding: 0 56px; }
+  .catalog-head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid rgba(201,162,39,.25); padding-bottom: 18px; margin-bottom: 8px; }
+  .catalog-head h2 { font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 34px; letter-spacing: .06em; }
+  .catalog-head span { font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: rgba(236,231,221,.4); }
+  .lot { display: grid; grid-template-columns: 64px 1fr 220px 240px; gap: 24px; align-items: center; padding: 26px 8px; border-bottom: 1px solid rgba(236,231,221,.07); transition: background .2s; cursor: pointer; }
+  .lot:hover { background: rgba(201,162,39,.05); }
+  .lot-num { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 20px; color: rgba(201,162,39,.7); }
+  .lot-title { font-size: 17px; font-weight: 400; letter-spacing: .02em; }
+  .lot-title small { display: block; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: rgba(236,231,221,.38); margin-top: 6px; }
+  .lot-index { text-align: right; }
+  .lot-index .v { font-family: 'Cormorant Garamond', serif; font-size: 24px; color: #f5f1e8; }
+  .lot-index .l { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: rgba(236,231,221,.38); }
+  .odds { display: flex; gap: 10px; justify-content: flex-end; }
+  .odds .side { min-width: 96px; text-align: center; padding: 10px 14px; border: 1px solid rgba(236,231,221,.16); font-size: 12px; letter-spacing: .08em; transition: all .2s; }
+  .odds .side:hover { border-color: #c9a227; }
+  .odds .side.sel-up { background: rgba(16,185,129,.14); border-color: #10b981; color: #4ade80; }
+  .odds .side.sel-down { background: rgba(239,68,68,.14); border-color: #ef4444; color: #f87171; }
+  .odds .side .p { display: block; font-size: 15px; font-weight: 500; margin-top: 2px; }
+  /* ── how it works ── */
+  .rituals { max-width: 1100px; margin: 110px auto 0; padding: 0 56px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; }
+  .ritual { border-top: 1px solid rgba(201,162,39,.35); padding-top: 24px; }
+  .ritual .n { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 22px; color: #c9a227; }
+  .ritual h3 { font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 24px; margin: 10px 0 12px; }
+  .ritual p { font-size: 13px; font-weight: 300; color: rgba(236,231,221,.55); line-height: 1.8; }
+  footer { margin-top: 120px; padding: 48px 56px; border-top: 1px solid rgba(236,231,221,.08); text-align: center; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: rgba(236,231,221,.3); }
+  footer a { color: #c9a227; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">LuX<span>Market</span></div>
+  <div class="nav-right">
+    <a href="#">Markets</a>
+    <a href="#">Methodology</a>
+    <span class="okb-badge">OKB $93.87</span>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="kicker">BuildX AI Season · X Layer</div>
+  <h1>Where <em>desire</em><br>meets prediction.</h1>
+  <p>An AI-curated auction house for price forecasts. Stake OKB on the direction of classic cars, collector watches and grail sneakers. Settled in USDT, open from one dollar.</p>
+  <div class="hero-cta">
+    <a class="btn btn-gold" href="#catalog">Enter the Room</a>
+    <a class="btn btn-ghost" href="#rituals">The Ritual</a>
+  </div>
+</header>
+
+<section class="catalog" id="catalog">
+  <div class="catalog-head">
+    <h2>This Season's Lots</h2>
+    <span>Weekly rolling · settlement 16 Aug</span>
+  </div>
+
+  <div class="lot">
+    <div class="lot-num">Lot 01</div>
+    <div class="lot-title">Porsche 911 (991.2)<small>Classic Cars · Hagerty Index</small></div>
+    <div class="lot-index"><div class="v">$128,450</div><div class="l">Reference</div></div>
+    <div class="odds">
+      <div class="side">UP 62%<span class="p">$0.62</span></div>
+      <div class="side">DOWN 38%<span class="p">$0.38</span></div>
+    </div>
+  </div>
+
+  <div class="lot">
+    <div class="lot-num">Lot 02</div>
+    <div class="lot-title">Ferrari Roma · Monterey Week<small>Classic Cars · Auction Event</small></div>
+    <div class="lot-index"><div class="v">$214,900</div><div class="l">Reference</div></div>
+    <div class="odds">
+      <div class="side">UP 55%<span class="p">$0.55</span></div>
+      <div class="side">DOWN 45%<span class="p">$0.45</span></div>
+    </div>
+  </div>
+
+  <div class="lot">
+    <div class="lot-num">Lot 03</div>
+    <div class="lot-title">Rolex Submariner 126610<small>Luxury Watches · WatchCharts</small></div>
+    <div class="lot-index"><div class="v">$13,750</div><div class="l">Reference</div></div>
+    <div class="odds">
+      <div class="side">UP 58%<span class="p">$0.58</span></div>
+      <div class="side">DOWN 42%<span class="p">$0.42</span></div>
+    </div>
+  </div>
+
+  <div class="lot">
+    <div class="lot-num">Lot 04</div>
+    <div class="lot-title">Hermès Birkin 25 Togo<small>Luxury Goods · 14-day</small></div>
+    <div class="lot-index"><div class="v">$24,500</div><div class="l">Reference</div></div>
+    <div class="odds">
+      <div class="side">UP 47%<span class="p">$0.47</span></div>
+      <div class="side">DOWN 53%<span class="p">$0.53</span></div>
+    </div>
+  </div>
+
+  <div class="lot">
+    <div class="lot-num">Lot 05</div>
+    <div class="lot-title">Nike Dunk Low 'Panda'<small>Sneakers · StockX</small></div>
+    <div class="lot-index"><div class="v">$98</div><div class="l">Reference</div></div>
+    <div class="odds">
+      <div class="side">UP 41%<span class="p">$0.41</span></div>
+      <div class="side">DOWN 59%<span class="p">$0.59</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="rituals" id="rituals">
+  <div class="ritual">
+    <div class="n">I.</div>
+    <h3>The Appraisal</h3>
+    <p>Our engine reads Hagerty, WatchCharts and StockX indices — then auctions, launches and sentiment — to set a fair probability for every lot.</p>
+  </div>
+  <div class="ritual">
+    <div class="n">II.</div>
+    <h3>The Bid</h3>
+    <p>Stake OKB on UP or DOWN. P2P zero-sum: winners take the losing side. Shares may be traded before the gavel falls.</p>
+  </div>
+  <div class="ritual">
+    <div class="n">III.</div>
+    <h3>The Settlement</h3>
+    <p>At the close, the real index snapshot decides. Collateralized onchain, settled in USDT — from one dollar.</p>
+  </div>
+</section>
+
+<footer>
+  LuXMarket · Building for <a href="#">@XLayerOfficial BuildX AI Season</a> · Demo
+</footer>
+
+<script>
+  // interactive: click a side to select it
+  document.querySelectorAll('.lot').forEach(lot => {
+    const sides = lot.querySelectorAll('.side');
+    sides.forEach(s => {
+      s.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sides.forEach(x => x.classList.remove('sel-up', 'sel-down'));
+        s.classList.add(s.textContent.includes('UP') ? 'sel-up' : 'sel-down');
+      });
+    });
+  });
+</script>
+</body>
+</html>

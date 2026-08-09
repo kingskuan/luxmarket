@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LuXMarket — Variant C: Immersive Dark</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Space Grotesk', -apple-system, sans-serif;
+    background: #050506; color: #fafafa;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  /* ambient glows */
+  .glow { position: fixed; border-radius: 50%; filter: blur(120px); z-index: 0; pointer-events: none; }
+  .glow-1 { width: 500px; height: 500px; background: rgba(212,175,55,.12); top: -150px; right: -100px; }
+  .glow-2 { width: 420px; height: 420px; background: rgba(113,50,245,.10); bottom: 10%; left: -120px; }
+  /* nav */
+  nav { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 24px 40px; }
+  .logo { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .logo span { color: #d4af37; }
+  nav .links a { color: rgba(250,250,250,.6); text-decoration: none; font-size: 13px; margin-left: 28px; transition: color .2s; }
+  nav .links a:hover { color: #d4af37; }
+  .nav-btn { background: transparent; border: 1px solid rgba(212,175,55,.5); color: #d4af37; padding: 10px 22px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .2s; margin-left: 28px; }
+  .nav-btn:hover { background: #d4af37; color: #050506; }
+  /* hero */
+  .hero { position: relative; z-index: 1; min-height: 82vh; display: flex; flex-direction: column; justify-content: center; padding: 0 40px; max-width: 1400px; margin: 0 auto; }
+  .hero .tagline { font-size: 12px; letter-spacing: .5em; text-transform: uppercase; color: #d4af37; margin-bottom: 28px; }
+  .hero h1 { font-size: clamp(48px, 8vw, 110px); font-weight: 600; letter-spacing: -3px; line-height: .98; }
+  .hero h1 .dim { color: rgba(250,250,250,.25); font-weight: 300; }
+  .hero h1 .gold { color: #d4af37; }
+  .hero p { margin-top: 32px; max-width: 540px; font-size: 16px; font-weight: 300; color: rgba(250,250,250,.55); line-height: 1.8; }
+  .hero-actions { margin-top: 44px; display: flex; gap: 14px; align-items: center; }
+  .big-cta { background: #d4af37; color: #050506; border: none; padding: 18px 36px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform .15s, box-shadow .2s; }
+  .big-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(212,175,55,.3); }
+  .ghost-cta { background: transparent; border: 1px solid rgba(250,250,250,.25); color: #fafafa; padding: 17px 32px; font-size: 14px; cursor: pointer; transition: border-color .2s, color .2s; }
+  .ghost-cta:hover { border-color: #d4af37; color: #d4af37; }
+  .okb-chip { margin-left: 16px; font-family: ui-monospace, monospace; font-size: 12px; color: rgba(250,250,250,.5); }
+  /* marquee strip */
+  .marquee { position: relative; z-index: 1; border-top: 1px solid rgba(250,250,250,.08); border-bottom: 1px solid rgba(250,250,250,.08); padding: 18px 0; overflow: hidden; }
+  .marquee-inner { display: flex; gap: 48px; white-space: nowrap; animation: scroll 28s linear infinite; width: max-content; }
+  .marquee-inner span { font-family: ui-monospace, monospace; font-size: 13px; color: rgba(250,250,250,.45); }
+  .marquee-inner b { color: #d4af37; font-weight: 500; }
+  @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  /* markets — horizontal snap cards */
+  .markets { position: relative; z-index: 1; padding: 90px 40px; max-width: 1400px; margin: 0 auto; }
+  .markets h2 { font-size: 13px; letter-spacing: .4em; text-transform: uppercase; color: rgba(250,250,250,.4); margin-bottom: 36px; }
+  .card-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+  .card {
+    background: linear-gradient(160deg, rgba(255,255,255,.045), rgba(255,255,255,.012));
+    border: 1px solid rgba(255,255,255,.09);
+    padding: 28px; position: relative; overflow: hidden;
+    transition: transform .25s, border-color .25s, background .25s; cursor: pointer;
+  }
+  .card:hover { transform: translateY(-6px); border-color: rgba(212,175,55,.45); background: linear-gradient(160deg, rgba(212,175,55,.08), rgba(255,255,255,.015)); }
+  .card .cat { font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: #d4af37; }
+  .card h3 { font-size: 20px; font-weight: 600; margin: 14px 0 4px; letter-spacing: -0.3px; }
+  .card .sub { font-size: 12px; color: rgba(250,250,250,.4); margin-bottom: 22px; }
+  .card .ref { font-size: 26px; font-weight: 500; font-family: ui-monospace, monospace; }
+  .card .ref small { font-size: 12px; color: rgba(250,250,250,.4); font-family: 'Space Grotesk'; font-weight: 300; }
+  .card .prob-line { display: flex; justify-content: space-between; font-size: 12px; margin-top: 18px; }
+  .card .prob-line .up { color: #4ade80; } .card .prob-line .down { color: #f87171; }
+  .bar { height: 3px; background: rgba(255,255,255,.08); margin-top: 8px; position: relative; }
+  .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #4ade80, #d4af37); }
+  .card .go { margin-top: 22px; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: rgba(250,250,250,.35); transition: color .2s; }
+  .card:hover .go { color: #d4af37; }
+  /* manifesto */
+  .manifesto { position: relative; z-index: 1; padding: 120px 40px; max-width: 900px; margin: 0 auto; text-align: center; }
+  .manifesto h2 { font-size: clamp(30px, 4.5vw, 56px); font-weight: 500; letter-spacing: -2px; line-height: 1.15; }
+  .manifesto h2 .gold { color: #d4af37; }
+  .manifesto p { margin: 28px auto 0; max-width: 560px; color: rgba(250,250,250,.5); font-weight: 300; line-height: 1.9; font-size: 15px; }
+  footer { position: relative; z-index: 1; padding: 40px; text-align: center; font-size: 12px; color: rgba(250,250,250,.3); border-top: 1px solid rgba(255,255,255,.06); }
+  footer a { color: #d4af37; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="glow glow-1"></div>
+<div class="glow glow-2"></div>
+
+<nav>
+  <div class="logo">LuX<span>Market</span></div>
+  <div class="links">
+    <a href="#">Markets</a>
+    <a href="#">AI Engine</a>
+    <a href="#">Docs</a>
+    <button class="nav-btn">Enter App</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="tagline">BuildX AI Season · X Layer</div>
+  <h1>OWN THE<br><span class="gold">PREDICTION.</span><br><span class="dim">NOT THE WATCH.</span></h1>
+  <p>AI prices the impossible — a Rolex, a 911, a grail sneaker. You stake OKB on the direction. Winners take the pool, settled in USDT. The luxury market, open to everyone.</p>
+  <div class="hero-actions">
+    <button class="big-cta">Start Predicting →</button>
+    <button class="ghost-cta">How it works</button>
+    <span class="okb-chip">OKB $93.87 ▲</span>
+  </div>
+</section>
+
+<div class="marquee">
+  <div class="marquee-inner">
+    <span><b>ROLEX SUBMARINER</b> UP 58%</span><span><b>PORSCHE 991.2</b> UP 62%</span><span><b>BIRKIN 25</b> UP 47%</span><span><b>FERRARI ROMA</b> UP 55%</span><span><b>DUNK PANDA</b> UP 41%</span><span><b>AJ1 CHICAGO</b> SETTLING</span>
+    <span><b>ROLEX SUBMARINER</b> UP 58%</span><span><b>PORSCHE 991.2</b> UP 62%</span><span><b>BIRKIN 25</b> UP 47%</span><span><b>FERRARI ROMA</b> UP 55%</span><span><b>DUNK PANDA</b> UP 41%</span><span><b>AJ1 CHICAGO</b> SETTLING</span>
+  </div>
+</div>
+
+<section class="markets">
+  <h2>LIVE MARKETS</h2>
+  <div class="card-row">
+
+    <div class="card">
+      <div class="cat">Classic Cars</div>
+      <h3>Porsche 911 (991.2)</h3>
+      <div class="sub">7d · Hagerty Index · settles Aug 16</div>
+      <div class="ref">$128,450 <small>USD</small></div>
+      <div class="prob-line"><span class="up">UP 62%</span><span class="down">DOWN 38%</span></div>
+      <div class="bar"><i style="width:62%"></i></div>
+      <div class="go">Trade this market →</div>
+    </div>
+
+    <div class="card">
+      <div class="cat">Classic Cars</div>
+      <h3>Ferrari Roma</h3>
+      <div class="sub">Monterey Auction Week · settles Aug 22</div>
+      <div class="ref">$214,900 <small>USD</small></div>
+      <div class="prob-line"><span class="up">UP 55%</span><span class="down">DOWN 45%</span></div>
+      <div class="bar"><i style="width:55%"></i></div>
+      <div class="go">Trade this market →</div>
+    </div>
+
+    <div class="card">
+      <div class="cat">Luxury Watches</div>
+      <h3>Rolex Submariner 126610</h3>
+      <div class="sub">7d · WatchCharts · settles Aug 16</div>
+      <div class="ref">$13,750 <small>USD</small></div>
+      <div class="prob-line"><span class="up">UP 58%</span><span class="down">DOWN 42%</span></div>
+      <div class="bar"><i style="width:58%"></i></div>
+      <div class="go">Trade this market →</div>
+    </div>
+
+    <div class="card">
+      <div class="cat">Luxury Goods</div>
+      <h3>Hermès Birkin 25 Togo</h3>
+      <div class="sub">14d · Resale Index · settles Aug 23</div>
+      <div class="ref">$24,500 <small>USD</small></div>
+      <div class="prob-line"><span class="up">UP 47%</span><span class="down">DOWN 53%</span></div>
+      <div class="bar"><i style="width:47%"></i></div>
+      <div class="go">Trade this market →</div>
+    </div>
+
+    <div class="card">
+      <div class="cat">Sneakers</div>
+      <h3>Nike Dunk Low 'Panda'</h3>
+      <div class="sub">7d · StockX · settles Aug 16</div>
+      <div class="ref">$98 <small>USD</small></div>
+      <div class="prob-line"><span class="up">UP 41%</span><span class="down">DOWN 59%</span></div>
+      <div class="bar"><i style="width:41%"></i></div>
+      <div class="go">Trade this market →</div>
+    </div>
+
+  </div>
+</section>
+
+<section class="manifesto">
+  <h2>Luxury markets are <span class="gold">opaque.</span><br>We make them <span class="gold">predictable.</span></h2>
+  <p>Three institutions control what a Birkin is worth. AI opens the black box — seeding fair prices from indices, auctions and news, so anyone can take a side with as little as one dollar.</p>
+</section>
+
+<footer>LuXMarket · Building for <a href="#">@XLayerOfficial BuildX AI Season</a> · demo</footer>
+
+<script>
+  // interactive: cards flip to a mini "stake" state on click
+  document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', () => {
+      if (card.dataset.flipped) {
+        card.style.transform = ''; card.dataset.flipped = '';
+        card.querySelector('.go').textContent = 'Trade this market →';
+        return;
+      }
+      card.dataset.flipped = '1';
+      card.querySelector('.go').textContent = '✓ Staking UI opens here';
+    });
+  });
+</script>
+</body>
+</html>
