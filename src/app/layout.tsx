@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
+import Web3Provider from "../components/Web3Provider";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -22,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={spaceGrotesk.variable}>
       <body className="bg-[#050506] text-[#fafafa] antialiased min-h-screen">
-        {children}
+        <Web3Provider>{children}</Web3Provider>
       </body>
     </html>
   );

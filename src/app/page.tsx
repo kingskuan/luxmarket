@@ -1,5 +1,6 @@
 import MarketGrid from "../components/MarketGrid";
 import OkbPrice from "../components/OkbPrice";
+import WalletButton from "../components/WalletButton";
 import { HERO_IMAGE } from "../lib/markets";
 
 export default function Home() {
@@ -22,9 +23,7 @@ export default function Home() {
             How it works
           </a>
           <OkbPrice />
-          <button className="cursor-pointer border border-lux-gold/50 px-5 py-2 text-sm font-medium text-lux-gold transition hover:bg-lux-gold hover:text-black">
-            Enter App
-          </button>
+          <WalletButton />
         </div>
       </nav>
 

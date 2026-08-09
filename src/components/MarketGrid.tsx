@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
+import { encodeFunctionData, parseAbi } from "viem";
 import { Market, MARKETS as MARKETS_ALL } from "../lib/markets";
+import { LUXMARKET_ADDRESS, USDT_ADDRESS } from "../lib/chain";
+import { LUXMARKET_ABI } from "../lib/abi";
+import { useWeb3 } from "./Web3Provider";
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
@@ -15,19 +19,108 @@ const CAT_STYLE: Record<string, string> = {
   Sneaker: "text-amber-400",
 };
 
+const USDT_ABI = parseAbi([
+  "function approve(address spender, uint256 amount) returns (bool)",
+]);
+
 function MarketCard({ m }: { m: Market }) {
+  const { address, connect, walletClient, publicClient } = useWeb3();
   const [side, setSide] = useState<"up" | "down" | null>(null);
   const [amount, setAmount] = useState("10");
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [isPending, setIsPending] = useState(false);
+  const [chainPrice, setChainPrice] = useState<number | null>(null);
+  const [txError, setTxError] = useState<string | null>(null);
 
-  const upPct = Math.round(m.upProb * 100);
+  const marketId = m.id.startsWith("0x")
+    ? (m.id as `0x${string}`)
+    : undefined;
+
+  // read on-chain price
+  useEffect(() => {
+    if (!publicClient || !marketId) return;
+    let cancelled = false;
+    publicClient
+      .readContract({
+        address: LUXMARKET_ADDRESS,
+        abi: LUXMARKET_ABI,
+        functionName: "priceUp",
+        args: [marketId],
+      })
+      .then((v) => {
+        if (!cancelled) setChainPrice(Number(v) / 1e18);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [publicClient, marketId]);
+
+  const upPct = chainPrice !== null ? Math.round(chainPrice * 100) : Math.round(m.upProb * 100);
   const downPct = 100 - upPct;
   const payout = (s: "up" | "down", amt: number) => {
-    const p = s === "up" ? m.upProb : 1 - m.upProb;
+    const p = s === "up" ? upPct / 100 : downPct / 100;
     if (p <= 0) return 0;
     return amt / p;
   };
 
   const closed = m.status === "closed";
+
+  const sendTx = useCallback(
+    async (to: `0x${string}`, data: `0x${string}`) => {
+      if (!walletClient || !address) throw new Error("wallet not connected");
+      const hash = await walletClient.sendTransaction({
+        to,
+        data,
+      } as never);
+      return hash;
+    },
+    [walletClient, address]
+  );
+
+  const handleTrade = async (s: "up" | "down") => {
+    setTxError(null);
+    if (!address) {
+      await connect();
+      return;
+    }
+    if (!marketId) {
+      setTxError("This market is not deployed on-chain yet.");
+      return;
+    }
+    const amt = Number(amount);
+    if (!amt || amt <= 0) {
+      setTxError("Enter a valid amount.");
+      return;
+    }
+    const shares = BigInt(Math.round(amt * 1e18));
+    setSide(s);
+    setIsPending(true);
+    try {
+      // 1) approve USDT
+      const approveData = encodeFunctionData({
+        abi: USDT_ABI,
+        functionName: "approve",
+        args: [LUXMARKET_ADDRESS, BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")],
+      });
+      const approveHash = await sendTx(USDT_ADDRESS, approveData);
+      setTxHash(approveHash);
+      if (publicClient) await publicClient.waitForTransactionReceipt({ hash: approveHash });
+
+      // 2) buy
+      const buyData = encodeFunctionData({
+        abi: LUXMARKET_ABI,
+        functionName: "buy",
+        args: [marketId, s === "up", shares],
+      });
+      const buyHash = await sendTx(LUXMARKET_ADDRESS, buyData);
+      setTxHash(buyHash);
+    } catch (e) {
+      setTxError((e as Error).message.slice(0, 140));
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   return (
     <div className="group flex flex-col overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.045] to-white/[0.012] transition-all duration-300 hover:-translate-y-1.5 hover:border-lux-gold/50 hover:shadow-[0_20px_60px_rgba(212,175,55,0.12)]">
@@ -75,7 +168,12 @@ function MarketCard({ m }: { m: Market }) {
       {/* body */}
       <div className="flex flex-1 flex-col p-4">
         <div className="flex justify-between text-xs">
-          <span className="text-emerald-400">UP {upPct}%</span>
+          <span className="text-emerald-400">
+            UP {upPct}%{" "}
+            {chainPrice !== null && (
+              <span className="text-[10px] text-emerald-500/50">on-chain</span>
+            )}
+          </span>
           <span className="text-red-400">DOWN {downPct}%</span>
         </div>
         <div className="mt-2 h-[3px] w-full overflow-hidden rounded bg-white/10">
@@ -104,11 +202,12 @@ function MarketCard({ m }: { m: Market }) {
                 onChange={(e) => setAmount(e.target.value)}
                 className="w-20 rounded-lg border border-white/15 bg-black/40 px-3 py-2 text-sm font-mono outline-none focus:border-lux-gold/60"
               />
-              <span className="text-xs text-white/40">OKB</span>
+              <span className="text-xs text-white/40">USDT</span>
               <div className="flex flex-1 gap-2">
                 <button
-                  onClick={() => setSide("up")}
-                  className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
+                  onClick={() => handleTrade("up")}
+                  disabled={isPending}
+                  className={`flex-1 rounded-lg py-2 text-xs font-bold transition disabled:opacity-50 ${
                     side === "up"
                       ? "bg-emerald-500 text-black"
                       : "border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
@@ -117,8 +216,9 @@ function MarketCard({ m }: { m: Market }) {
                   BUY UP
                 </button>
                 <button
-                  onClick={() => setSide("down")}
-                  className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
+                  onClick={() => handleTrade("down")}
+                  disabled={isPending}
+                  className={`flex-1 rounded-lg py-2 text-xs font-bold transition disabled:opacity-50 ${
                     side === "down"
                       ? "bg-red-500 text-black"
                       : "border border-red-500/40 text-red-400 hover:bg-red-500/10"
@@ -129,26 +229,35 @@ function MarketCard({ m }: { m: Market }) {
               </div>
             </div>
 
-            {side && (
-              <div className="rounded-lg border border-lux-gold/30 bg-lux-gold/5 p-2.5 text-[11px]">
-                <div className="flex justify-between">
-                  <span className="text-white/60">
-                    {amount || "0"} OKB on{" "}
-                    <span className="font-bold text-white">
-                      {side === "up" ? "UP" : "DOWN"}
-                    </span>
-                  </span>
-                  <span className="text-white/60">
-                    Win →{" "}
-                    <span className="font-bold text-lux-gold">
-                      ~{fmt(payout(side, Number(amount) || 0))} OKB
-                    </span>
-                  </span>
-                </div>
-                <div className="mt-1 text-white/40">
-                  Settles {new Date(m.settleAt).toLocaleDateString("en-US")}.
-                  P2P zero-sum.
-                </div>
+            {!address && (
+              <div className="text-center text-[11px] text-white/40">
+                Click BUY to connect wallet first
+              </div>
+            )}
+
+            {isPending && (
+              <div className="rounded-lg bg-white/5 p-2 text-center text-[11px] text-white/60">
+                Waiting for wallet confirmation…
+              </div>
+            )}
+
+            {txHash && (
+              <div className="rounded-lg border border-lux-gold/30 bg-lux-gold/5 p-2 text-[11px]">
+                <span className="text-white/60">Tx: </span>
+                <a
+                  href={`https://www.okx.com/web3/explorer/xlayer/tx/${txHash}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-mono text-lux-gold"
+                >
+                  {txHash.slice(0, 10)}…{txHash.slice(-6)}
+                </a>
+              </div>
+            )}
+
+            {txError && (
+              <div className="rounded-lg bg-red-500/10 p-2 text-[11px] text-red-400">
+                {txError}
               </div>
             )}
           </div>
