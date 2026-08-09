@@ -2,8 +2,8 @@ export type MarketStatus = "open" | "settling" | "closed";
 
 export interface Market {
   id: string;
-  /** Asset class: classic car / luxury watch / sneaker */
-  category: "Car" | "Watch" | "Goods" | "Sneaker";
+  /** Asset class: classic car / luxury watch / sneaker / collectible */
+  category: "Car" | "Watch" | "Goods" | "Sneaker" | "Collectible";
   /** Short human label */
   title: string;
   /** Longer description of the prediction question */
@@ -138,5 +138,23 @@ export const MARKETS: Market[] = [
     image:
       "https://live.staticflickr.com/8510/8505392872_4044c2d71d_b.jpg",
     imageAlt: "Air Jordan Chicago sneaker",
+  },
+  {
+    id: "pokemon-char-week",
+    category: "Collectible",
+    title: "Pokémon Charizard (151)",
+    question:
+      "Will the Pokémon TCG market (Nintendo NTDOY proxy) rise over the next 14 days?",
+    upProb: 0.55,
+    reference: 12.72,
+    referenceUnit: "USD · NTDOY",
+    settleAt: "2026-08-24T00:00:00Z",
+    status: "open",
+    period: "14d · Nintendo proxy",
+    aiRationale:
+      "Pokémon card demand is event-driven — new set drops and Prismatic restocks move the whole TCG market.",
+    image:
+      "https://live.staticflickr.com/8020/7254949880_dbce343c16_b.jpg",
+    imageAlt: "Pokémon trading cards",
   },
 ];

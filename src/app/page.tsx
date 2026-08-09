@@ -2,6 +2,9 @@ import MarketGrid from "../components/MarketGrid";
 import OkbPrice from "../components/OkbPrice";
 import WalletButton from "../components/WalletButton";
 import MarketPulse from "../components/MarketPulse";
+import MarketShare from "../components/MarketShare";
+import Reveal from "../components/Reveal";
+import HeroFX from "../components/HeroFX";
 import { HERO_IMAGE } from "../lib/markets";
 
 export default function Home() {
@@ -30,12 +33,15 @@ export default function Home() {
 
       {/* hero — full-bleed image */}
       <section className="relative z-[1] flex min-h-[78vh] flex-col justify-center overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${HERO_IMAGE})` }}
-        />
+        <HeroFX backgroundImage={HERO_IMAGE} />
         <div className="absolute inset-0 bg-gradient-to-t from-[#050506] via-black/60 to-black/30" />
-        <div className="relative mx-auto w-full max-w-6xl px-6 sm:px-10">
+        <Reveal
+          trigger={false}
+          stagger={0.14}
+          y={50}
+          duration={1.1}
+          className="relative mx-auto w-full max-w-6xl px-6 sm:px-10"
+        >
           <div className="mb-6 text-xs uppercase tracking-[0.5em] text-lux-gold">
             BuildX AI Season · X Layer
           </div>
@@ -65,7 +71,7 @@ export default function Home() {
               How it works
             </a>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* ticker marquee */}
@@ -84,11 +90,16 @@ export default function Home() {
         </div>
       </div>
 
+      {/* market share — sizing animation */}
+      <MarketShare />
+
       {/* markets */}
       <section id="markets" className="relative z-[1] mx-auto max-w-6xl px-6 py-20 sm:px-10">
-        <h2 className="mb-8 text-xs uppercase tracking-[0.4em] text-white/40">
-          Live Markets
-        </h2>
+        <Reveal>
+          <h2 className="mb-8 text-xs uppercase tracking-[0.4em] text-white/40">
+            Live Markets
+          </h2>
+        </Reveal>
         <MarketGrid />
       </section>
 
@@ -97,12 +108,14 @@ export default function Home() {
 
       {/* how it works */}
       <section id="how" className="relative z-[1] mx-auto max-w-4xl px-6 py-24 text-center sm:px-10">
-        <h2 className="text-4xl font-medium leading-tight tracking-[-2px] sm:text-5xl">
-          Luxury markets are <span className="text-lux-gold">opaque.</span>
-          <br />
-          We make them <span className="text-lux-gold">predictable.</span>
-        </h2>
-        <div className="mt-14 grid gap-10 sm:grid-cols-3">
+        <Reveal>
+          <h2 className="text-4xl font-medium leading-tight tracking-[-2px] sm:text-5xl">
+            Luxury markets are <span className="text-lux-gold">opaque.</span>
+            <br />
+            We make them <span className="text-lux-gold">predictable.</span>
+          </h2>
+        </Reveal>
+        <Reveal stagger={0.15} className="mt-14 grid gap-10 sm:grid-cols-3">
           {[
             { n: "01", t: "AI seeds the price", d: "Index data + auction news + sentiment → fair probability per market. Neutral anchor, never a counterparty." },
             { n: "02", t: "You take a side", d: "Stake OKB on UP or DOWN. As little as $1 equivalent. Shares tradable before settlement." },
@@ -118,7 +131,7 @@ export default function Home() {
               </p>
             </div>
           ))}
-        </div>
+        </Reveal>
       </section>
 
       <footer className="relative z-[1] border-t border-white/5 py-10 text-center text-xs text-white/30">

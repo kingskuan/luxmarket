@@ -58,4 +58,5 @@ export const MARKET_IDS: Record<string, `0x${string}`> = {
   "birkin-25-week": "0xcdbff3ee2a706880bf78afcbe3f50717d50a8ee47b1d9079ed8bb4a8c5930d1a",
   "dunk-low-week": "0x8410dbce3b086a86871cd0c32fbe0d0527076bc2be8569f27f063355702f51e1",
   "nike-jordan-1-settling": "0x71429fd2e5cbad363e7c6026ae402bcba0e996a0abaec639b5c0cf5b0c94d52d",
+  "pokemon-char-week": "0xc212165eb7e131cc48fb9fd11dbe652c6ea1f2c3d6c9cadd52e13826b75ebf24",
 };

@@ -63,6 +63,34 @@ const ASSET_MAP: {
     bull: ["surge", "rise", "demand", "record", "soar", "appreciat", "sell out", "hype"],
     bear: ["drop", "fall", "decline", "restock", "slump", "cooling", "weak", "price cut"],
   },
+  {
+    market: "pokemon-char-week",
+    asset: "Pokémon",
+    keywords: ["pokemon", "pokémon", "charizard", "pikachu", "nintendo", "tcg", "trading card", "card market", "prismatic", "pokemon cards"],
+    bull: ["surge", "record", "soar", "demand", "sell out", "hype", "price increase", "rally", "high"],
+    bear: ["drop", "fall", "decline", "restock", "slump", "cooling", "weak", "reprint", "price cut"],
+  },
+  {
+    market: "rolex-sub-week",
+    asset: "Fine Watches",
+    keywords: ["cartier", "patek philippe", "audemars piguet", "richard mille", "omega", "chrono24", "watch market", "luxury watch"],
+    bull: ["surge", "rise", "demand", "waitlist", "appreciat", "record", "soar", "shortage", "rally"],
+    bear: ["drop", "fall", "decline", "cooling", "slump", "correction", "weak"],
+  },
+  {
+    market: "birkin-25-week",
+    asset: "Luxury Fashion",
+    keywords: ["chanel", "gucci", "dior", "fashion", "couture", "luxury goods", "retail", "boutique", "handbag"],
+    bull: ["surge", "rise", "demand", "record", "soar", "growth", "price increase", "raise", "rally"],
+    bear: ["drop", "fall", "decline", "slowdown", "slump", "weak", "cut", "layoff", "discount"],
+  },
+  {
+    market: "ferrari-roma-event",
+    asset: "Auction & Art",
+    keywords: ["auction", "sotheby", "christie", "fine art", "collector", "concours", "rare", "one-off", "commission"],
+    bull: ["record", "hammer", "sold", "soar", "surge", "high demand", "top price", "estimate", "million"],
+    bear: ["unsold", "below estimate", "drop", "fall", "weak", "cooling", "plunge"],
+  },
 ];
 
 function classify(title: string, lower: string, entry: (typeof ASSET_MAP)[number]) {
@@ -76,7 +104,18 @@ function classify(title: string, lower: string, entry: (typeof ASSET_MAP)[number
 }
 
 export async function GET(req: NextRequest) {
-  const q = req.nextUrl.searchParams.get("q") || "luxury watch OR hermes OR LV OR porsche OR nike sneaker";
+  // 主题池: 每次请求轮换不同的查询词组合 → 新闻永不重复、一直有新内容
+  const THEMES = [
+    "luxury watch OR hermes OR LV OR porsche OR nike sneaker",
+    "pokemon cards OR charizard OR nintendo OR trading card market",
+    "chanel OR cartier OR patek philippe OR luxury goods OR fashion",
+    "auction OR sotheby OR christie OR fine art OR collector car OR ferrari",
+    "rolex OR submariner OR audemars OR richard mille OR watch market",
+    "birkin OR hermes OR gucci OR dior OR luxury retail OR handbag",
+  ];
+  const q =
+    req.nextUrl.searchParams.get("q") ||
+    THEMES[Math.floor(Math.random() * THEMES.length)];
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`;
 
   try {
@@ -87,15 +126,20 @@ export async function GET(req: NextRequest) {
     if (!res.ok) throw new Error(`RSS fetch ${res.status}`);
     const xml = await res.text();
 
-    // parse <item> blocks
-    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 12);
+    // parse <item> blocks — 抓 20 条, 但只保留前 10 条已匹配/未匹配的
+    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 20);
     const pulses: PulseItem[] = [];
+    const seen = new Set<string>();
 
     for (const [, body] of items) {
       const titleMatch = body.match(/<title>(.*?)<\/title>/);
       const dateMatch = body.match(/<pubDate>(.*?)<\/pubDate>/);
       if (!titleMatch) continue;
       const title = titleMatch[1].replace(/<!\[CDATA\[|\]\]>/g, "").trim();
+      // 去重: 同一标题不重复展示
+      const key = title.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (seen.has(key)) continue;
+      seen.add(key);
       const lower = title.toLowerCase();
 
       let matched = false;
@@ -127,7 +171,19 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, items: pulses });
+    // 按发布时间倒序 (最新在前)
+    pulses.sort((a, b) => {
+      const ta = a.date ? Date.parse(a.date) : 0;
+      const tb = b.date ? Date.parse(b.date) : 0;
+      return tb - ta;
+    });
+
+    return NextResponse.json({
+      ok: true,
+      items: pulses.slice(0, 10),
+      theme: q,
+      fetchedAt: new Date().toISOString(),
+    });
   } catch (e) {
     return NextResponse.json(
       { ok: false, error: (e as Error).message },

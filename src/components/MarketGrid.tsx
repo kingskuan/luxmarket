@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { encodeFunctionData, parseAbi } from "viem";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Market, MARKETS as MARKETS_ALL } from "../lib/markets";
 import { LUXMARKET_ADDRESS, USDT_ADDRESS, MARKET_IDS } from "../lib/chain";
 import { LUXMARKET_ABI } from "../lib/abi";
@@ -323,8 +325,34 @@ function MarketCard({ m }: { m: Market }) {
 }
 
 export default function MarketGrid() {
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  // stagger-reveal cards on scroll into view
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    gsap.registerPlugin(ScrollTrigger);
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        grid.querySelectorAll(":scope > div"),
+        { y: 80, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 1.0,
+          ease: "power3.out",
+          stagger: 0.12,
+          scrollTrigger: { trigger: grid, start: "top 85%", once: true },
+        }
+      );
+    }, grid);
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+    <div ref={gridRef} className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
       {MARKETS_ALL.map((m) => (
         <MarketCard key={m.id} m={m} />
       ))}
