@@ -68,6 +68,9 @@ function MarketCard({ m, live }: { m: Market; live?: LiveMarket }) {
     down: number;
   } | null>(null);
   const [txError, setTxError] = useState<string | null>(null);
+  // 我的份额 (1e18 shares)
+  const [myUp, setMyUp] = useState<number>(0);
+  const [myDown, setMyDown] = useState<number>(0);
 
   const marketId = MARKET_IDS[m.id];
   const status = deriveStatus(live);
@@ -130,6 +133,47 @@ function MarketCard({ m, live }: { m: Market; live?: LiveMarket }) {
       cancelled = true;
     };
   }, [publicClient, marketId, amount]);
+
+  // read my shares (sharesUp/sharesDown mapping getter)
+  useEffect(() => {
+    if (!publicClient || !marketId || !address) {
+      setMyUp(0);
+      setMyDown(0);
+      return;
+    }
+    let cancelled = false;
+    const loadShares = async () => {
+      try {
+        const [up, down] = await Promise.all([
+          publicClient.readContract({
+            address: LUXMARKET_ADDRESS,
+            abi: LUXMARKET_ABI,
+            functionName: "sharesUp",
+            args: [marketId, address],
+          }),
+          publicClient.readContract({
+            address: LUXMARKET_ADDRESS,
+            abi: LUXMARKET_ABI,
+            functionName: "sharesDown",
+            args: [marketId, address],
+          }),
+        ]);
+        if (!cancelled) {
+          setMyUp(Number(up) / 1e18);
+          setMyDown(Number(down) / 1e18);
+        }
+      } catch {
+        if (!cancelled) {
+          setMyUp(0);
+          setMyDown(0);
+        }
+      }
+    };
+    loadShares();
+    return () => {
+      cancelled = true;
+    };
+  }, [publicClient, marketId, address]);
 
   // UP 概率 = 链上 LMSR 市场定价 (真实); 无连接时回退 50% 并标注
   const upPct = chainPrice !== null ? Math.round(chainPrice * 100) : 50;
@@ -200,6 +244,67 @@ function MarketCard({ m, live }: { m: Market; live?: LiveMarket }) {
       });
       const buyHash = await sendTx(LUXMARKET_ADDRESS, buyData);
       setTxHash(buyHash);
+    } catch (e) {
+      setTxError((e as Error).message.slice(0, 140));
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  /** 卖出: sell(id, isUp, shares) — 份额按当前 LMSR 价退款 */
+  const handleSell = async (s: "up" | "down") => {
+    setTxError(null);
+    if (!address) {
+      await connect();
+      return;
+    }
+    if (!marketId) return;
+    const held = s === "up" ? myUp : myDown;
+    if (held <= 0) return;
+    const shares = BigInt(Math.round(held * 1e18));
+    setSide(s);
+    setIsPending(true);
+    try {
+      const sellData = encodeFunctionData({
+        abi: LUXMARKET_ABI,
+        functionName: "sell",
+        args: [marketId, s === "up", shares],
+      });
+      const hash = await sendTx(LUXMARKET_ADDRESS, sellData);
+      setTxHash(hash);
+      // 乐观清零, 下次刷新会重新读链上
+      if (s === "up") setMyUp(0);
+      else setMyDown(0);
+    } catch (e) {
+      setTxError((e as Error).message.slice(0, 140));
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  /** 赎回: redeem(id) — 结算后按 outcome 领取 */
+  const handleRedeem = async () => {
+    setTxError(null);
+    if (!address) {
+      await connect();
+      return;
+    }
+    if (!marketId) return;
+    if (myUp <= 0 && myDown <= 0) {
+      setTxError("You hold no winning shares to redeem.");
+      return;
+    }
+    setIsPending(true);
+    try {
+      const redeemData = encodeFunctionData({
+        abi: LUXMARKET_ABI,
+        functionName: "redeem",
+        args: [marketId],
+      });
+      const hash = await sendTx(LUXMARKET_ADDRESS, redeemData);
+      setTxHash(hash);
+      setMyUp(0);
+      setMyDown(0);
     } catch (e) {
       setTxError((e as Error).message.slice(0, 140));
     } finally {
@@ -296,9 +401,49 @@ function MarketCard({ m, live }: { m: Market; live?: LiveMarket }) {
           )}
         </p>
 
+        {/* 结算状态可视化 */}
+        {live && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px]">
+            {live.chain.settled ? (
+              <span className="rounded border border-white/20 bg-white/10 px-1.5 py-0.5 text-white/70">
+                ✓ settled {live.chain.outcomeUp ? "UP" : "DOWN"} won
+              </span>
+            ) : live.chain.feedReportedAt > 0 ? (
+              <span className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-amber-300">
+                ⏳ outcome fed · dispute window (24h)
+              </span>
+            ) : (
+              <span className="rounded border border-emerald-500/30 bg-emerald-500/5 px-1.5 py-0.5 text-emerald-300/80">
+                ● open · trading until {settleLabel}
+              </span>
+            )}
+            {live.chain.feedReportedAt > 0 && (
+              <span className="text-white/30">
+                fed {new Date(live.chain.feedReportedAt * 1000).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+          </div>
+        )}
+
         {closed ? (
-          <div className="mt-4 rounded-lg bg-white/5 py-2 text-center text-sm text-white/40">
-            Market settled
+          <div className="mt-4 space-y-2">
+            <div className="rounded-lg bg-white/5 py-2 text-center text-sm text-white/50">
+              Market settled {live?.chain.outcomeUp ? "→ UP won" : "→ DOWN won"}
+            </div>
+            {address && (myUp > 0 || myDown > 0) && (
+              <button
+                onClick={handleRedeem}
+                disabled={isPending}
+                className="w-full rounded-lg bg-lux-gold py-2.5 text-xs font-bold text-black transition hover:opacity-90 disabled:opacity-50"
+              >
+                REDEEM my winnings → (USD₮0)
+              </button>
+            )}
+            {address && myUp <= 0 && myDown <= 0 && (
+              <div className="text-center text-[11px] text-white/35">
+                No shares held — nothing to redeem.
+              </div>
+            )}
           </div>
         ) : (
           <div className="mt-4 space-y-2">
@@ -340,6 +485,52 @@ function MarketCard({ m, live }: { m: Market; live?: LiveMarket }) {
             {!address && (
               <div className="text-center text-[11px] text-white/40">
                 Click BUY to connect wallet first
+              </div>
+            )}
+
+            {/* 我的份额 + 卖出 */}
+            {address && (myUp > 0 || myDown > 0) && (
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] p-2.5">
+                <div className="mb-1.5 text-[10px] uppercase tracking-widest text-white/40">
+                  My position
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex gap-3 text-[11px]">
+                    {myUp > 0 && (
+                      <span className="text-emerald-400">
+                        UP {myUp.toFixed(2)} shares
+                      </span>
+                    )}
+                    {myDown > 0 && (
+                      <span className="text-red-400">
+                        DOWN {myDown.toFixed(2)} shares
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-1.5">
+                    {myUp > 0 && (
+                      <button
+                        onClick={() => handleSell("up")}
+                        disabled={isPending}
+                        className="rounded border border-emerald-500/40 px-2 py-1 text-[10px] font-bold text-emerald-400 transition hover:bg-emerald-500/10 disabled:opacity-50"
+                      >
+                        SELL UP
+                      </button>
+                    )}
+                    {myDown > 0 && (
+                      <button
+                        onClick={() => handleSell("down")}
+                        disabled={isPending}
+                        className="rounded border border-red-500/40 px-2 py-1 text-[10px] font-bold text-red-400 transition hover:bg-red-500/10 disabled:opacity-50"
+                      >
+                        SELL DOWN
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-1 text-[10px] text-white/30">
+                  Sells at the live LMSR price before settlement.
+                </div>
               </div>
             )}
 
